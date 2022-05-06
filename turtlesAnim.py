@@ -1,4 +1,5 @@
 from tkinter import font
+from turtle import distance
 from manim import *
 from numpy import character, pi
 from manim_fonts import*
@@ -121,24 +122,37 @@ class DaisyTittle(Scene):
             self.add(b)
         self.add(lightsaber)
        # tittle[0]
-class MoveAroundText(Animation):
-    def __init__(self,vmobject : VMobject, _text: Text,completeness = 0,loop:bool = True, **kwargs) -> None:
+class MoveAroundObject(Animation):
+    def __init__(self,vmobject : VMobject, path: Mobject,completeness = 0,loop:bool = True,remove_jumps = False, **kwargs) -> None:
         # Pass number as the mobject of the animation
         super().__init__(vmobject,  **kwargs)
         self.completeness = completeness
         self.loop = loop
-        path = VMobject()
-        path.set_points_as_corners(_text.get_all_points())
+        self.remove_jumps = remove_jumps
         self.start_x = path.get_x()
         self.start_y = path.get_y()
-        self.path = path
+        self.points = path.get_all_points()
+        i = 0
+        inside = False
+        for point in self.points:
+            points = []
+            d = np.sqrt(np.square(self.points[i][0] - self.points[i-1][0]) + np.square(self.points[i][1]-self.points[i][1]))
+            if(d<0.1 and inside == True):
+                points.append(point)
+            elif(d<0.1):
+                inside = False
+            else:
+                inside = True
+            print(d)
+            i+=1
+        self.points = points
     def interpolate_mobject(self, alpha: float) -> None:
         completeness = self.completeness + alpha
         if completeness>1:
             if self.loop == False:
                 return
             completeness = (self.completeness + alpha)-1
-        point = self.path.get_all_points()[int(np.round(self.path.get_num_points()*completeness))-1]
+        point = self.points[int(np.round(len(self.points)*completeness))-1]
         self.mobject.set_x(point[0])
         self.mobject.set_y(point[1])
 class AzaTittle(Scene):
@@ -146,7 +160,7 @@ class AzaTittle(Scene):
         bacteria = [ImageMobject("img/bacteria.png"),ImageMobject("img/bacteria.png"),ImageMobject("img/bacteria.png"),ImageMobject("img/bacteria.png"),ImageMobject("img/bacteria.png")]
 
         with register_font("fonts/Balloons-3ArL.ttf"):
-            first = Text("aza", font="Balloons!")
+            first = Text("a", font="Balloons!")
 
             last = Text("holmes", font="Balloons!")
             first.fill_color = GREEN
@@ -163,7 +177,7 @@ class AzaTittle(Scene):
         for b in bacteria:       
             b.set_color(YELLOW)
             b.scale(0.1)
-            anims.append(MoveAroundText(b,first,completeness=i/len(bacteria)))
+            anims.append(MoveAroundObject(b,first,remove_jumps=True,completeness=i/len(bacteria)))
             i+=1
         self.play(*anims,rate_func = linear,run_time = 10)
        # tittle[0]
